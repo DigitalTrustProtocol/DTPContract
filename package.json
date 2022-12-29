@@ -1,0 +1,72 @@
+{
+    "name": "dtpcontract",
+    "version": "1.0.11",
+    "description": "EVM Smart Contract",
+    "main": "dist/src/index.js",
+    "types": "dist/src/index.d.ts",
+    "scripts": {
+        "test": "hardhat test",
+        "deploy": "hardhat deploy",
+        "deploy:local": "hardhat deploy --network localhost",
+        "build": "tsc -p tsconfig.json",
+        "build:watch": "tsc -w -p tsconfig.json",
+        "dev": "tsc -w -p tsconfig.json",
+        "build:release": "npm run clean && tsc -p tsconfig.release.json",
+        "start:dev": "npm run build:watch && node -r dotenv-flow/config dist/src/index.js --node-env=development",
+        "start:prod": "npm run build:release && node -r dotenv-flow/config dist/src/index.js --node-env=production",
+        "task:local": "hardhat --network localhost",
+        "node": "hardhat node",
+        "clean": "rimraf dist",
+        "dryrun": "npm publish --dry-run"
+    },
+    "files": [
+        "dist/**/*",
+        "LICENSE",
+        "README.md"
+    ],
+    "author": "Carsten Keutmann <keutmann@yahoo.com>",
+    "license": "MIT",
+    "devDependencies": {
+        "@nomicfoundation/hardhat-network-helpers": "^1.0.6",
+        "@nomiclabs/hardhat-ethers": "^2.2.1",
+        "@nomiclabs/hardhat-etherscan": "^3.1.2",
+        "@nomiclabs/hardhat-solhint": "^2.0.1",
+        "@nomiclabs/hardhat-web3": "^2.0.0",
+        "@openzeppelin/contracts": "^4.8.0",
+        "@pinata/sdk": "^1.2.1",
+        "@typechain/ethers-v5": "^10.1.1",
+        "@typechain/hardhat": "^6.1.4",
+        "@types/chai": "^4.3.4",
+        "@types/lodash": "^4.14.189",
+        "@types/mocha": "^9.1.1",
+        "@types/node": "^16.18.3",
+        "babel-eslint": "^10.1.0",
+        "chai": "^4.3.7",
+        "chai-bignumber": "^3.1.0",
+        "chai-bn": "^0.3.1",
+        "chai-ethers": "^0.0.1",
+        "hardhat": "^2.12.2",
+        "hardhat-deploy": "^0.11.20",
+        "mocha-skip-if": "^0.0.3",
+        "rimraf": "^3.0.2",
+        "solhint": "^3.3.7",
+        "solidity-coverage": "^0.8.2",
+        "transform": "^1.1.2",
+        "ts-generator": "^0.1.1",
+        "ts-node": "^10.9.1",
+        "tslint": "^6.1.3",
+        "tslint-config-prettier": "^1.18.0",
+        "tslint-plugin-prettier": "^2.3.0",
+        "typechain": "^8.1.1",
+        "typescript": "^4.9.3",
+        "web3": "^1.8.1"
+    },
+    "mocha": {
+        "timeout": 10000000
+    },
+    "dependencies": {
+        "dotenv-flow": "^3.2.0",
+        "ethers": "^5.7.2",
+        "lodash": "^4.17.21"
+    }
+}

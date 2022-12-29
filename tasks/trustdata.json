@@ -1,0 +1,41 @@
+
+{
+    "claims" : [ 
+        [1,2,"Trust1", 1], 
+        [1,3,"Trust1", 1],
+        [1,4,"Trust1", 1],
+        [1,5,"Trust1", 1],
+        [1,"0xF046bCa0D18dA64f65Ff2268a84f2F5B87683C47","Trust1", 1], 
+        [1,"0xF046bCa0D18dA64f65Ff2268a84f2F5B87683C47","DisplayName", "Test user"],
+
+        [2,2,"Trust1", 1],
+        [2,4,"Audit100", 1],
+        [2,5,"Trust1", 1],
+        [2,6,"Trust1", 1],
+        [2,"0xF046bCa0D18dA64f65Ff2268a84f2F5B87683C47","Trust1", 1], 
+
+        [3,4,"Trust1", 1],
+        [3,7,"Trust1", -1],
+        [3,8,"Trust1", -1],
+        [3,10,"Trust1", 1],
+        [3,11,"Trust1", 1],
+        [3,12,"Trust1", 1],
+        [3,13,"Trust1", 1],
+
+
+        [7,1,"Trust1", 1],
+        [7,3,"Trust1", 1],
+        [7,14,"Trust1", 1],
+        [7,"0xF046bCa0D18dA64f65Ff2268a84f2F5B87683C47","Trust1", 1],
+        [7,"0xF046bCa0D18dA64f65Ff2268a84f2F5B87683C47","Rating100", 99],
+
+        [9,1,"Delegate1", 1],
+
+        [14,1,"Trust1", 1],
+        [14,2,"Trust1", 1],
+        [14,3,"Trust1", 1],
+        [14,"0xF046bCa0D18dA64f65Ff2268a84f2F5B87683C47","Trust1", 1]
+
+
+    ]
+}
