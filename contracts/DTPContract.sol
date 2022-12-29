@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./DTPResources.sol";
 import "./StringExtensions.sol";
 
+
 contract DTPContract is Ownable, ReentrancyGuard {
     using StringExtensions for string;
     using SafeERC20 for IERC20;
@@ -20,13 +21,41 @@ contract DTPContract is Ownable, ReentrancyGuard {
 
 
     mapping(bytes32 => Claim) public claims;
-    mapping(address => FeeToken) private feeTokens;
-    mapping(address => mapping(address => FeeToken)) private individualFee;
+
+    // @dev The fee for each claim type, default is 1e18 as the value is used as a multiplier.
+    mapping(string => FeeToken) public claimFees; 
+
+    // @dev The fee for each token address type, default is 1e18 as the value is used as a multiplier.
+    mapping(address => FeeToken) private tokenFees;
+
+    // @dev The fee for each issuer address, default is 1e18 as the value is used as a multiplier.
+    mapping(address => FeeToken) private issuerFees;
 
     // Notify when someone sends native token to this contract.
     receive() external payable {
         emit TransferReceived(msg.sender, msg.value);
     }
+
+    constructor() {
+        // Set the default fee for the no claim.        
+        claimFees[""] = FeeToken({
+            accepted: true,
+            fee: 1e18
+        });
+
+        // Set the default fee for the no token.
+        issuerFees[address(0)] = FeeToken({
+            accepted: true,
+            fee: 1e18
+        });
+
+        // Set the default fee for the no token.
+        tokenFees[address(0)] = FeeToken({
+            accepted: true,
+            fee: 1e18
+        });
+    }
+
 
     // -----------------------------------------------
     // Events
@@ -72,6 +101,8 @@ contract DTPContract is Ownable, ReentrancyGuard {
         );
     }
 
+    
+
     function escapeClaim(
         Claim memory _claim
     ) public pure returns (Claim memory) {
@@ -82,37 +113,59 @@ contract DTPContract is Ownable, ReentrancyGuard {
         return _claim;
     }
 
-    function publishClaims(
-        Claim[] memory _claim,
-        address _token,
-        uint256 _fee // User provided fee as security feature.
-    ) public payable nonReentrant returns (bytes32[] memory id_) {
-        require(_claim.length > 0, "No claims provided");
-        require(
-            _claim.length <= 100,
-            "No more than 100 claims can be submitted at once"
-        );
+    function estimateFee(Claim[] memory _claims, address issuer, address _token) public view returns (uint256 fee_) {
+        FeeToken memory baseFee = (_token == address(0)) ? nativeToken: _getTokenFee(_token);
 
-        _transferFee(_token, _fee, _claim.length);
+        require(baseFee.accepted, "Token not accepted");
+        
+        FeeToken memory issuerFee = _getIssuerFee(issuer);
 
-        id_ = new bytes32[](_claim.length);
-        for (uint256 i = 0; i < _claim.length; i++) {
-            id_[i] = _publishClaim(_claim[i]);
+        for (uint256 i = 0; i < _claims.length; i++) {
+            FeeToken memory claimFee = _getClaimFeeFactor(_claims[i].typeId);
+            fee_ += baseFee.fee * issuerFee.fee * claimFee.fee;
         }
     }
 
-    function publishClaim(
-        Claim memory _claim,
-        address _token,
-        uint256 _fee // User provided fee as security feature.
-    ) public payable nonReentrant returns (bytes32 id_) {
-        // Maybe?!
-        //require(_activate == 0 || (_activate > 0 && _activate >= block.timestamp), "Activate cannot be less than blockchain timestamp");
-        //require(_expire == 0 || (_expire > 0 && _expire >= block.timestamp), "Activate cannot be less than blockchain timestamp");
+    function publishClaims(
+        Claim[] memory _claims,
+        address _token
+    ) public payable nonReentrant returns (bytes32[] memory id_) {
+        require(_claims.length > 0, "No claims provided");
+        require(
+            _claims.length <= 100,
+            "No more than 100 claims can be submitted at once"
+        );
+        
 
-        _transferFee(_token, _fee, 1);
-        id_ = _publishClaim(_claim);
+        uint256 fee = estimateFee(_claims, msg.sender, _token);
+
+        require(_token != address(0) || (_token == address(0) && msg.value >= fee), "Not enough fee provided");
+
+        if(_token != address(0)) {
+            // Only transfer the fee if the token is not native token.
+            IERC20(_token).safeTransferFrom(msg.sender, address(this), fee);
+        }
+
+        id_ = new bytes32[](_claims.length);
+        for (uint256 i = 0; i < _claims.length; i++) {
+            id_[i] = _publishClaim(_claims[i]);
+        }
     }
+
+    // -----------------------------------------------
+    // Needs removal, publishClaims should be used instead
+    // function publishClaim(
+    //     Claim memory _claim,
+    //     address _token,
+    //     uint256 _fee // User provided fee as security feature.
+    // ) public payable nonReentrant returns (bytes32 id_) {
+    //     // Maybe?!
+    //     //require(_activate == 0 || (_activate > 0 && _activate >= block.timestamp), "Activate cannot be less than blockchain timestamp");
+    //     //require(_expire == 0 || (_expire > 0 && _expire >= block.timestamp), "Activate cannot be less than blockchain timestamp");
+
+    //     _transferFee(_token, _fee, 1);
+    //     id_ = _publishClaim(_claim);
+    // }
 
     // // -----------------------------------------------
     // // Owner functions
@@ -124,25 +177,35 @@ contract DTPContract is Ownable, ReentrancyGuard {
         nativeToken = FeeToken({accepted: _accepted, fee: _fee});
     }
 
-    function setFeeToken(
-        address _token,
+    function setClaimFee(
+        string calldata _typeId,
         bool _accepted,
-        uint256 _fee
+        uint256 _feeFactor
     ) external onlyOwner {
-        require(_fee <= MaxFee, "Fee is too large");
+        require(_feeFactor <= MaxFee, "Fee factor is too large");
 
-        feeTokens[_token] = FeeToken({accepted: _accepted, fee: _fee});
+        claimFees[_typeId] = FeeToken({accepted: _accepted, fee: _feeFactor});
     }
 
-    function setIndividualFee(
-        address _subject,
+
+    function setTokenFee(
         address _token,
         bool _accepted,
         uint256 _fee
     ) external onlyOwner {
         require(_fee <= MaxFee, "Fee is too large");
 
-        individualFee[_subject][_token] = FeeToken({
+        tokenFees[_token] = FeeToken({accepted: _accepted, fee: _fee});
+    }
+
+    function setIssuerFee(
+        address _subject,
+        bool _accepted,
+        uint256 _fee
+    ) external onlyOwner {
+        require(_fee <= MaxFee, "Fee is too large");
+
+        issuerFees[_subject] = FeeToken({
             accepted: _accepted,
             fee: _fee
         });
@@ -164,7 +227,6 @@ contract DTPContract is Ownable, ReentrancyGuard {
         address _to,
         uint256 _amount
     ) external onlyOwner nonReentrant {
-        //require(_amount <= _token.balanceOf(address(this)), "balance is low");
         _token.safeTransfer(_to, _amount);
     }
 
@@ -172,42 +234,28 @@ contract DTPContract is Ownable, ReentrancyGuard {
     // // Internals
     // // -----------------------------------------------
 
-    function _transferFee(
-        address _token,
-        uint256 _fee, // User provided fee as security feature.
-        uint256 _feeMultiplier
-    ) internal {
-        uint256 fee = _fee * _feeMultiplier;
-        require(fee <= MaxFee, "Fee is too large"); // Failsafe. Make sure that the fee is not too large.
-
-        if (nativeToken.accepted) {
-            // Pay the fee in native token.
-
-            require(
-                msg.value >= nativeToken.fee * _feeMultiplier,
-                "Fee amount is too small"
-            );
-        } else if (_token != address(0)) {
-            // Pay fee with token
-            FeeToken memory feeToken = individualFee[msg.sender][_token];
-
-            if (feeToken.accepted == false) {
-                feeToken = feeTokens[_token];
-                if (feeToken.accepted == false)
-                    revert("Fee token provided is not accepted");
-            }
-
-            require(
-                fee >= feeToken.fee * _feeMultiplier,
-                "Fee amount is too small"
-            );
-
-            if (fee > 0)
-                IERC20(_token).safeTransferFrom(msg.sender, address(this), fee);
-        } else {
-            revert("No fee provided");
-        }
+     function _getTokenFee(address _token) internal view returns (FeeToken memory fee_) {
+        fee_ = tokenFees[_token];
+        if (!fee_.accepted) {
+            fee_ = tokenFees[address(0)]; // Default fee if no fee is set for the token.
+        } 
     }
+    
+    function _getClaimFeeFactor(string memory _typeId) internal view returns (FeeToken memory fee_) {
+        fee_ = claimFees[_typeId];
+        if (!fee_.accepted) {
+             fee_ = claimFees[""]; // Default fee if no fee is set for the claim type.
+        } 
+    }
+
+    function _getIssuerFee(
+        address _subject
+    ) internal view returns (FeeToken memory fee_) {
+        fee_ = issuerFees[_subject];
+        if (!fee_.accepted) {
+            fee_ = issuerFees[address(0)];
+        } 
+    }   
 
     function _publishClaim(Claim memory _claim) internal returns (bytes32 id_) {
         require(

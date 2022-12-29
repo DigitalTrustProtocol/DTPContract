@@ -2,7 +2,7 @@ import "@nomiclabs/hardhat-ethers";
 import { task, types } from "hardhat/config";
 import { DTPContract, ClaimStruct } from "../typechain/contracts/DTPContract";
 
-import { getDTPContract, getDTPContractLogs, claimTypeId, scope, context } from '../src/contract';
+import { getDTPContract, getDTPContractLogs, claimTypeId, scope, context, DTPContractABI } from '../src/contract';
 import { BigNumber, utils, BytesLike, Wallet, Signer } from 'ethers';
 import { hardhatArguments } from "hardhat";
 
@@ -36,10 +36,14 @@ task("create-trust", "Creates a new trust claim item")
             activate: BigNumber.from(0)
         }
 
+        let claims: ClaimStruct[] = [];
+        claims.push(claim);
+
         console.log("Creating Trust claim");
-        const tx = await contract.publishClaim(claim, "0x0000000000000000000000000000000000000000", BigNumber.from(0));
-        const receipt = await tx.wait();
-        console.log(`Transaction receipt: ${receipt.transactionHash}`);
+        console.log(DTPContractABI);
+        //const tx = await contract.publishClaims(claims, "0x0000000000000000000000000000000000000000");
+        //const receipt = await tx.wait();
+        //console.log(`Transaction receipt: ${receipt.transactionHash}`);
     });
 
 task("create-displayname", "Creates a new claim with display name")
@@ -66,8 +70,11 @@ task("create-displayname", "Creates a new claim with display name")
             activate: BigNumber.from(0)
         }
 
+        let claims: ClaimStruct[] = [];
+        claims.push(claim);
+
         console.log("Creating Trust claim");
-        const tx = await contract.publishClaim(claim, "0x0000000000000000000000000000000000000000", BigNumber.from(0));
+        const tx = await contract.publishClaims(claims, "0x0000000000000000000000000000000000000000");
         const receipt = await tx.wait();
         console.log(`Transaction receipt: ${receipt.transactionHash}`);
     });
@@ -171,7 +178,7 @@ task("create-claims", "Creates a new trust claim items for all accounts")
             console.log("Claims: ", claims.length);
     
             const contract: DTPContract = getDTPContract(chainId, issuer);
-            const tx = await contract.publishClaims(claims, "0x0000000000000000000000000000000000000000", BigNumber.from(0));
+            const tx = await contract.publishClaims(claims, "0x0000000000000000000000000000000000000000");
             const receipt = await tx.wait();
             console.log(`Transaction receipt: ${receipt.transactionHash}`);
         };

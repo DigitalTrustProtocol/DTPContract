@@ -58,6 +58,7 @@ struct Claim {
     uint256 expire;
 }
 
+
 struct FeeToken {
     bool accepted;
     uint256 fee;

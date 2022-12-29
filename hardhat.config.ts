@@ -2,10 +2,10 @@
  * @type import('hardhat/config').HardhatUserConfig
  */
 
-import "@nomiclabs/hardhat-ethers";
+import '@typechain/hardhat'
+import '@nomiclabs/hardhat-ethers'
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-solhint";
-import "@typechain/hardhat";
 import "dotenv/config";
 import "hardhat-deploy";
 import "solidity-coverage";
@@ -15,6 +15,7 @@ import "./tasks/balance";
 import "./tasks/block-number";
 import "./tasks/blockchain";
 import "./tasks/create-trust";
+
 
 const MAINNET_RPC_URL =
     process.env.MAINNET_RPC_URL ||
@@ -95,7 +96,8 @@ module.exports = {
     typechain: {
         outDir: 'typechain',
         target: 'ethers-v5',
-        //alwaysGenerateOverloads: false, // should overloads with full signatures like deposit(uint256) be generated always, even if there are no overloads?
-        //externalArtifacts: ['externalArtifacts/*.json'], // optional array of glob patterns with external artifacts to process (for example external libs from node_modules)
+        alwaysGenerateOverloads: false, // should overloads with full signatures like deposit(uint256) be generated always, even if there are no overloads?
+        externalArtifacts: ['externalArtifacts/*.json'], // optional array of glob patterns with external artifacts to process (for example external libs from node_modules)
+        dontOverrideCompile: false // defaults to false
     },
 };
