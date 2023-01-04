@@ -3,7 +3,7 @@
 pragma solidity ^0.8.7;
 import "hardhat/console.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -11,14 +11,16 @@ import "./DTPResources.sol";
 import "./StringExtensions.sol";
 
 
-contract DTPContract is Ownable, ReentrancyGuard {
+contract DTPContract is AccessControl, ReentrancyGuard {
     using StringExtensions for string;
     using SafeERC20 for IERC20;
+
+    bytes32 internal constant FEE_ROLE = keccak256("FEE_ROLE");
+    bytes32 internal constant WITHDRAW_ROLE = keccak256("WITHDRAWAL_ROLE");
 
     uint256 constant MaxFee = 1e18 * 100;
 
     FeeToken public nativeToken;
-
 
     mapping(bytes32 => Claim) public claims;
 
@@ -36,24 +38,25 @@ contract DTPContract is Ownable, ReentrancyGuard {
         emit TransferReceived(msg.sender, msg.value);
     }
 
+    //constructor(address owner) {
     constructor() {
+
+        address owner = msg.sender;
+    
+        _grantRole(DEFAULT_ADMIN_ROLE, owner);
+        _grantRole(FEE_ROLE, owner);
+        _grantRole(WITHDRAW_ROLE, owner);
+
+        setNativeToken(true, 0);
+
         // Set the default fee for the no claim.        
-        claimFees[""] = FeeToken({
-            accepted: true,
-            fee: 1e18
-        });
+        setClaimFee("", true, 1e18);
+        
+        // Set the default fee for the no issuer.
+        setIssuerFee(address(0), true, 1e18);
 
         // Set the default fee for the no token.
-        issuerFees[address(0)] = FeeToken({
-            accepted: true,
-            fee: 1e18
-        });
-
-        // Set the default fee for the no token.
-        tokenFees[address(0)] = FeeToken({
-            accepted: true,
-            fee: 1e18
-        });
+        setTokenFee(address(0), true, 1e18);
     }
 
 
@@ -152,36 +155,21 @@ contract DTPContract is Ownable, ReentrancyGuard {
         }
     }
 
-    // -----------------------------------------------
-    // Needs removal, publishClaims should be used instead
-    // function publishClaim(
-    //     Claim memory _claim,
-    //     address _token,
-    //     uint256 _fee // User provided fee as security feature.
-    // ) public payable nonReentrant returns (bytes32 id_) {
-    //     // Maybe?!
-    //     //require(_activate == 0 || (_activate > 0 && _activate >= block.timestamp), "Activate cannot be less than blockchain timestamp");
-    //     //require(_expire == 0 || (_expire > 0 && _expire >= block.timestamp), "Activate cannot be less than blockchain timestamp");
-
-    //     _transferFee(_token, _fee, 1);
-    //     id_ = _publishClaim(_claim);
-    // }
-
     // // -----------------------------------------------
     // // Owner functions
     // // -----------------------------------------------
 
-    function setNativeToken(bool _accepted, uint256 _fee) external onlyOwner {
+    function setNativeToken(bool _accepted, uint256 _fee) public onlyRole(FEE_ROLE) {
         require(_fee <= MaxFee, "Fee is too large");
 
         nativeToken = FeeToken({accepted: _accepted, fee: _fee});
     }
 
     function setClaimFee(
-        string calldata _typeId,
+        string memory _typeId,
         bool _accepted,
         uint256 _feeFactor
-    ) external onlyOwner {
+    ) public onlyRole(FEE_ROLE) {
         require(_feeFactor <= MaxFee, "Fee factor is too large");
 
         claimFees[_typeId] = FeeToken({accepted: _accepted, fee: _feeFactor});
@@ -192,7 +180,7 @@ contract DTPContract is Ownable, ReentrancyGuard {
         address _token,
         bool _accepted,
         uint256 _fee
-    ) external onlyOwner {
+    ) public onlyRole(FEE_ROLE) {
         require(_fee <= MaxFee, "Fee is too large");
 
         tokenFees[_token] = FeeToken({accepted: _accepted, fee: _fee});
@@ -202,7 +190,7 @@ contract DTPContract is Ownable, ReentrancyGuard {
         address _subject,
         bool _accepted,
         uint256 _fee
-    ) external onlyOwner {
+    ) public onlyRole(FEE_ROLE) {
         require(_fee <= MaxFee, "Fee is too large");
 
         issuerFees[_subject] = FeeToken({
@@ -214,7 +202,7 @@ contract DTPContract is Ownable, ReentrancyGuard {
     function withdraw(
         uint _amount,
         address payable _destAddr
-    ) external onlyOwner nonReentrant {
+    ) external onlyRole(WITHDRAW_ROLE) nonReentrant {
         require(_amount <= address(this).balance, "Insufficient funds");
 
         _destAddr.transfer(_amount);
@@ -226,7 +214,7 @@ contract DTPContract is Ownable, ReentrancyGuard {
         IERC20 _token,
         address _to,
         uint256 _amount
-    ) external onlyOwner nonReentrant {
+    ) external onlyRole(WITHDRAW_ROLE) nonReentrant {
         _token.safeTransfer(_to, _amount);
     }
 

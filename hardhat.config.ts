@@ -45,7 +45,8 @@ module.exports = {
             // }
             chainId: 1337,
         },
-        localhost: {},
+        // localhost: {
+        // },
         kovan: {
             url: KOVAN_RPC_URL,
             // accounts: [PRIVATE_KEY],
@@ -62,12 +63,12 @@ module.exports = {
             },
             saveDeployments: true,
         },
-        ganache: {
-            url: "http://0.0.0.0:8545",
-            accounts: {
-                mnemonic: MNEMONIC,
-            },
-        },
+        // ganache: {
+        //     url: "http://0.0.0.0:8545",
+        //     accounts: {
+        //         mnemonic: MNEMONIC,
+        //     },
+        // },
     },
     etherscan: {
         // Your API key for Etherscan
