@@ -9,6 +9,7 @@ import "@nomiclabs/hardhat-solhint";
 import "dotenv/config";
 import "hardhat-deploy";
 import "solidity-coverage";
+import "hardhat-contract-sizer";
 
 import "./tasks/accounts";
 import "./tasks/balance";
@@ -101,4 +102,11 @@ module.exports = {
         externalArtifacts: ['externalArtifacts/*.json'], // optional array of glob patterns with external artifacts to process (for example external libs from node_modules)
         dontOverrideCompile: false // defaults to false
     },
+    contractSizer: {
+        alphaSort: true,
+        disambiguatePaths: false,
+        runOnCompile: false,
+        strict: false,
+        only: [],
+      }
 };
