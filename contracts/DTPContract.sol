@@ -29,7 +29,7 @@ contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
     // @dev The fee for each claim type, default is 1e18 as the value is used as a multiplier.
     mapping(string => FeeToken) public claimFees;
 
-    // @dev The fee for each token address type, default is 1e18 as the value is used as a multiplier.
+    // @dev The fee for each token address type, default is 1e18. The token acts as a base fee value.
     mapping(address => FeeToken) private tokenFees;
 
     // @dev The fee for each issuer address, default is 1e18 as the value is used as a multiplier.
@@ -107,7 +107,7 @@ contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
         FeeToken memory issuerFee = _getIssuerFee(issuer);
 
         for (uint256 i = 0; i < _claims.length; i++) {
-            FeeToken memory claimFee = _getClaimFeeFactor(_claims[i].typeId);
+            FeeToken memory claimFee = _getClaimFee(_claims[i].typeId);
             fee_ += baseFee.fee * issuerFee.fee * claimFee.fee;
         }
     }
@@ -233,7 +233,7 @@ contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
         }
     }
 
-    function _getClaimFeeFactor(
+    function _getClaimFee(
         string memory _typeId
     ) internal view returns (FeeToken memory fee_) {
         fee_ = claimFees[_typeId];
