@@ -4,14 +4,14 @@ pragma solidity ^0.8.7;
 import "hardhat/console.sol";
 
 import "@opengsn/contracts/src/ERC2771Recipient.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+import "./DTPAccessControl.sol";
 import "./DTPResources.sol";
 import "./StringExtensions.sol";
 
-contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
+contract DTPContract is ERC2771Recipient, DTPAccessControl, ReentrancyGuard {
     using StringExtensions for string;
     using SafeERC20 for IERC20;
 
@@ -70,16 +70,14 @@ contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
         address indexed issuer,
         address indexed subject,
         string value,
-        string scope,
         string context,
         string comment,
         string link,
         uint256 activate,
-        uint256 expire
+        uint256 expires
     );
-
     //event TransferReceived(address indexed _from, uint _amount);
-    event TransferSent(
+    event Withdraw(
         address indexed _from,
         address indexed _destAddr,
         uint _amount
@@ -197,31 +195,21 @@ contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
     function withdraw(
         uint _amount,
         address payable _destAddr
-    ) external nonReentrant {
-        _checkRole(WITHDRAW_ROLE, msg.sender); // @dev Only msg.sender can withdraw, not ERC2771Recipient _msgSender().
+    ) external onlyRole(WITHDRAW_ROLE) nonReentrant { // @dev ERC2771Recipient _msgSender() is not used in onlyRole.
         require(_amount <= address(this).balance, "Insufficient funds");
 
         _destAddr.transfer(_amount);
 
-        emit TransferSent(_msgSender(), _destAddr, _amount);
+        emit Withdraw(msg.sender, _destAddr, _amount);
     }
 
     function transfer(
         IERC20 _token,
         address _to,
         uint256 _amount
-    ) external nonReentrant {
-        _checkRole(WITHDRAW_ROLE, msg.sender); // @dev Only msg.sender can withdraw, not ERC2771Recipient _msgSender().
+    ) external onlyRole(WITHDRAW_ROLE) nonReentrant { // @dev ERC2771Recipient _msgSender() is not used in onlyRole.
         _token.safeTransfer(_to, _amount);
     }
-
-    // May be unsafe! As a compromised trustedForwarder can steal funds.
-    // function setTrustedForwarder(address _trustedForwarder)
-    //     external
-    //     onlyRole(DEFAULT_ADMIN_ROLE)
-    // {
-    //     _setTrustedForwarder(_trustedForwarder);
-    // }
 
     // // -----------------------------------------------
     // // Internals
@@ -266,10 +254,6 @@ contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
             "Value is too long"
         );
         require(
-            bytes(_claim.scope).length <= scopeMaxLength,
-            "Scope is too long"
-        );
-        require(
             bytes(_claim.context).length <= contextMaxLength,
             "Context is too long"
         );
@@ -280,9 +264,8 @@ contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
         require(bytes(_claim.link).length <= linkMaxLength, "Link is too long");
 
         _claim.issuer = _msgSender(); // Override the issuer to msg.sender. This ensures that the caller is always the issuer.
-        _claim.scope = _claim.scope.escapeHTML(); // ensure to escape the string
-        _claim.context = _claim.context.escapeHTML(); // ensure to escape the string
-        _claim.comment = _claim.comment.escapeHTML(); // ensure to escape the string
+        //_claim.context = _claim.context.escapeHTML(); // ensure to escape the string
+        //_claim.comment = _claim.comment.escapeHTML(); // ensure to escape the string
 
         claims[_claim.typeId][_claim.issuer][_claim.subject][
             _claim.context
@@ -293,34 +276,11 @@ contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
             _claim.issuer,
             _claim.subject,
             _claim.value,
-            _claim.scope,
             _claim.context,
             _claim.comment,
             _claim.link,
             _claim.activate,
-            _claim.expire
+            _claim.expires
         );
-    }
-
-    // -----------------------------------------------
-    // ERC2771
-    // https://docs.opengsn.org/faq/troubleshooting.html#my-contract-is-using-openzeppelin-how-do-i-add-gsn-support
-    // -----------------------------------------------
-    function _msgSender()
-        internal
-        view
-        override(Context, ERC2771Recipient)
-        returns (address sender)
-    {
-        sender = ERC2771Recipient._msgSender();
-    }
-
-    function _msgData()
-        internal
-        view
-        override(Context, ERC2771Recipient)
-        returns (bytes calldata)
-    {
-        return ERC2771Recipient._msgData();
     }
 }

@@ -2,7 +2,7 @@ import "@nomiclabs/hardhat-ethers";
 import { task, types } from "hardhat/config";
 import { DTPContract, ClaimStruct } from "../typechain/contracts/DTPContract";
 
-import { getDTPContract, getDTPContractLogs, claimTypeId, scope, context, DTPContractABI } from '../src/contract';
+import { getDTPContract, getDTPContractLogs, claimTypeId, context, DTPContractABI } from '../src/contract';
 import { BigNumber, utils, BytesLike, Wallet, Signer } from 'ethers';
 import { hardhatArguments } from "hardhat";
 
@@ -28,11 +28,10 @@ task("create-trust", "Creates a new trust claim item")
             issuer: "0x0000000000000000000000000000000000000000", // Will automatically be set to the siger in the contract
             subject: contractSubject,
             value: taskArgs.value,
-            scope: scope.contract,
             context: context.chainLocal,
             comment: "This is a test trust claim",
             link: "",
-            expire: BigNumber.from(0),
+            expires: BigNumber.from(0),
             activate: BigNumber.from(0)
         }
 
@@ -62,11 +61,10 @@ task("create-displayname", "Creates a new claim with display name")
             issuer: "0x0000000000000000000000000000000000000000", // Will automatically be set to the siger in the contract
             subject: contractSubject,
             value: taskArgs.value,
-            scope: scope.entity,
             context: "",
             comment: "This is a test claim for displayname",
             link: "",
-            expire: BigNumber.from(0),
+            expires: BigNumber.from(0),
             activate: BigNumber.from(0)
         }
 
@@ -84,7 +82,6 @@ task("getClaim", "Get claim data")
     // .addParam("typeId", "Type Id")
     // .addParam("issuer", "Issuer")
     // .addParam("subject", "Subject")
-    // .addParam("scope", "Scope")
     // .addParam("context", "Context")
     .setAction(
         async (taskArgs: any, hre: any) => {
@@ -165,11 +162,10 @@ task("create-claims", "Creates a new trust claim items for all accounts")
                     issuer: "0x0000000000000000000000000000000000000000",
                     subject: subject,
                     value: value+"",
-                    scope: scope.contract,
                     context: context.chainLocal,
                     comment: "",
                     link: "",
-                    expire: BigNumber.from(0),
+                    expires: BigNumber.from(0),
                     activate: BigNumber.from(0)
                 }
                 claims[i] = claim;

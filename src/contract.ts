@@ -15,12 +15,11 @@ export type Claim = {
     issuer: string;
     subject: string;
     value: string; // 1,0,-1 (-x to +x) are the primary. Anything goes as its the typeId
-    scope: string; // the scope of the subject. E.g. contract, identity, ..., etc.
     context: string; // The context of the claim. E.g. (crypto.evm.chain:1)
     comment: string; // short message, including keywords (#). Safe?!
     link: string; // link to a resource. Eg. a website or email etc.
     activate: any;
-    expire: any;
+    expires: any;
     }
 
 export const claimTypeId = {
@@ -35,11 +34,6 @@ export const claimTypeId = {
     Name: "Name", // Name of the entity. The entity address has been calculated from the name.
 }
 
-export const scope = {
-    contract: "contract",
-    account: "account",
-    entity: "entity"
-}
 
 export const context = {
     chainLocal: "crypto.evm.chain:1337",

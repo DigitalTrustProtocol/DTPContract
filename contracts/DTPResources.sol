@@ -26,8 +26,6 @@ pragma solidity ^0.8.7;
 // -----------------
 // evm.chain.1
 
-// scope
-//
 
 
 
@@ -40,7 +38,6 @@ string constant contextChainEthereum = "crypto.evm.chain:1";
 uint256 constant defaultLength = 512;
 
 uint256 constant valueMaxLength = defaultLength;
-uint256 constant scopeMaxLength = defaultLength;
 uint256 constant contextMaxLength = defaultLength;
 uint256 constant commentMaxLength = defaultLength;
 uint256 constant linkMaxLength = defaultLength;
@@ -50,12 +47,11 @@ struct Claim {
     address issuer;
     address subject;
     string value; // 1,0,-1 (-x to +x) are the primary. Anything goes as its the typeId
-    string scope; // the scope of the subject. E.g. contract, identity, ..., etc.
     string context; // The context of the claim. E.g. (crypto.evm.chain:1)
     string comment; // short message, including keywords (#). Safe?!
     string link; // link to a resource. Eg. a website or email etc.
     uint256 activate;
-    uint256 expire;
+    uint256 expires;
 }
 
 
