@@ -57,9 +57,9 @@ contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
     }
 
     // Notify when someone sends native token to this contract.
-    receive() external payable {
-        emit TransferReceived(_msgSender(), msg.value);
-    }
+    // receive() external payable {
+    //     emit TransferReceived(_msgSender(), msg.value);
+    // }
 
     // -----------------------------------------------
     // Events
@@ -78,7 +78,7 @@ contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
         uint256 expire
     );
 
-    event TransferReceived(address indexed _from, uint _amount);
+    //event TransferReceived(address indexed _from, uint _amount);
     event TransferSent(
         address indexed _from,
         address indexed _destAddr,
@@ -197,7 +197,8 @@ contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
     function withdraw(
         uint _amount,
         address payable _destAddr
-    ) external onlyRole(WITHDRAW_ROLE) nonReentrant {
+    ) external nonReentrant {
+        _checkRole(WITHDRAW_ROLE, msg.sender); // @dev Only msg.sender can withdraw, not ERC2771Recipient _msgSender().
         require(_amount <= address(this).balance, "Insufficient funds");
 
         _destAddr.transfer(_amount);
@@ -209,16 +210,18 @@ contract DTPContract is ERC2771Recipient, AccessControl, ReentrancyGuard {
         IERC20 _token,
         address _to,
         uint256 _amount
-    ) external onlyRole(WITHDRAW_ROLE) nonReentrant {
+    ) external nonReentrant {
+        _checkRole(WITHDRAW_ROLE, msg.sender); // @dev Only msg.sender can withdraw, not ERC2771Recipient _msgSender().
         _token.safeTransfer(_to, _amount);
     }
 
-    function setTrustedForwarder(address _trustedForwarder)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        _setTrustedForwarder(_trustedForwarder);
-    }
+    // May be unsafe! As a compromised trustedForwarder can steal funds.
+    // function setTrustedForwarder(address _trustedForwarder)
+    //     external
+    //     onlyRole(DEFAULT_ADMIN_ROLE)
+    // {
+    //     _setTrustedForwarder(_trustedForwarder);
+    // }
 
     // // -----------------------------------------------
     // // Internals
